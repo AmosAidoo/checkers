@@ -7,6 +7,8 @@ function Piece(type, x, y) {
 	this.size = Math.floor(width/8)
 	this.x = x
 	this.y = y
+	this.isKing = false
+	
 	if (this.type === "dark") {
 		this.color = "#ff0000"
 	} else {
