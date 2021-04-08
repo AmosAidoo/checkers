@@ -1,0 +1,2 @@
+- Forced captures
+- Promotion form man to king
