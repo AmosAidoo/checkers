@@ -9,25 +9,27 @@
 	A king can move both forward and backward in successive cells
  */
 function Board(darkPlayer) {
-	this.darkPlayer = new Player("dark")
-	this.lightPlayer = new Player("light")
+	this.SIZE = 8
+	this.darkPlayer = new Player("dark", this.SIZE = 8)
+	this.lightPlayer = new Player("light", this.SIZE = 8)
 	this.state = [[], [], [], [], [], [], [], []]
-	this.clickedX = null
-	this.clickedY = null
+	this.clickedX = 0
+	this.clickedY = 0
 	this.possibleMoves = []
 	this.moveToggle = false
 	this.isDarkPlayer = darkPlayer
 	this.moves = null
+	this.PIECE_PER_PLAYER = 12
 
 	// Initialize board state
-	for (let y = 0; y < 8; y++) {
-		for (let x = 0; x < 8; x++) {
+	for (let y = 0; y < this.SIZE; y++) {
+		for (let x = 0; x < this.SIZE; x++) {
 			this.state[y][x] = null
 		}
 	}
 	// Dark pieces are represented as d on the board state
 	// Light pieces are represented as l on the board state
-	for (let i = 0; i < 12; i++) {
+	for (let i = 0; i < this.PIECE_PER_PLAYER; i++) {
 		this.state[this.darkPlayer.pieces[i]["y"]][this.darkPlayer.pieces[i]["x"]] = {sym: "d", piece: this.darkPlayer.pieces[i]}
 		this.state[this.lightPlayer.pieces[i]["y"]][this.lightPlayer.pieces[i]["x"]] = {sym: "l", piece: this.lightPlayer.pieces[i]}
 	}
@@ -35,8 +37,8 @@ function Board(darkPlayer) {
 
 Board.prototype.display = function () {
 	// Divide the width and height into 8 equal parts
-	let xDiv = Math.floor(width/8)
-	let yDiv = Math.floor(height/8)
+	let xDiv = Math.floor(width/this.SIZE)
+	let yDiv = Math.floor(height/this.SIZE)
 
 	// White and green
 	let white = "#ffffff"
@@ -48,13 +50,13 @@ Board.prototype.display = function () {
 	let colorSwitch = 0
 
 	// The board is 8x8
-	for (let y = 0; y < 8; y++) {
+	for (let y = 0; y < this.SIZE; y++) {
 		if (y % 2 === 0) {
 			colorSwitch = 0
 		} else {
 			colorSwitch = 1
 		}
-		for (let x = 0; x < 8; x++) {
+		for (let x = 0; x < this.SIZE; x++) {
 			// noStroke()
 			if (colorSwitch === 0) {
 				fill(white)
@@ -78,111 +80,63 @@ Board.prototype.display = function () {
 }
 
 Board.prototype.showPossibleMoves = function () {
-	let xDiv = width/8
-	let yDiv = height/8
+	let xDiv = width/this.SIZE
+	let yDiv = height/this.SIZE
 	
-	// if (this.moveToggle) {
 	rect(this.clickedX*Math.floor(xDiv), this.clickedY*Math.floor(yDiv), Math.floor(xDiv), Math.floor(yDiv))
 	for (let i = 0; i < this.possibleMoves.length; i++) {
 		rect(this.possibleMoves[i].x*Math.floor(xDiv), this.possibleMoves[i].y*Math.floor(yDiv), Math.floor(xDiv), Math.floor(yDiv))
 	}
-	// }
 }
 
 Board.prototype.handleMouseClick = function () {
 	let i, j
-	let xDiv = width/8
-	let yDiv = height/8
+	let xDiv = width/this.SIZE
+	let yDiv = height/this.SIZE
 
 	// Check for x position
-	for (i = 1; i <= 8; i++) {
+	for (i = 1; i <= this.SIZE; i++) {
 		if (pmouseX <= i * xDiv) {
 			break
 		}
 	}
 
 	// Check for y position
-	for (j = 1; j <= 8; j++) {
+	for (j = 1; j <= this.SIZE; j++) {
 		if (pmouseY <= j * yDiv) {
 			break
 		}
 	}
 
 	// Toggle move
-	if (this.moveToggle) {
-		if (this.clickedX == i-1 && this.clickedY == j-1) {
-			// this.moveToggle = false
-			return
-		}
-	} else {
-		this.moveToggle = true
+	// if (this.moveToggle) {
+	if (this.clickedX == i-1 && this.clickedY == j-1) {
+		// this.moveToggle = false
+		return
 	}
+	// } else {
+	// 	this.moveToggle = true
+	// }
+	console.log("State: ", this.state[j-1][i-1])
 
 	path = []
 
-	// Check if the current player has made a move
-	if (this.findMove(this.moves, i-1, j-1, path)) {
-		console.log(path)
-		// This means a move has been found and that
-		// the current player has made a move
-		console.log("Current player has made a move")
-		if (this.state[this.clickedY][this.clickedX] != null) {
-			if (this.state[this.clickedY][this.clickedX].sym == "d" && this.isDarkPlayer) {
-				this.state[j-1][i-1] = this.state[this.clickedY][this.clickedX]
-				this.state[this.clickedY][this.clickedX] = null
-				this.state[j-1][i-1].piece.movePiece(i-1, j-1)
-				
-			} else if (this.state[this.clickedY][this.clickedX].sym == "l" && !this.isDarkPlayer) {
-				this.state[j-1][i-1] = this.state[this.clickedY][this.clickedX]
-				this.state[this.clickedY][this.clickedX] = null
-				this.state[j-1][i-1].piece.movePiece(i-1, j-1)
-				
-			} else {
-				return
-			}
-		} else return
+	let clickedState = this.state[this.clickedY][this.clickedX]
 
-		// Now remove all the captured pieces
-		for (let i = 1; i < path.length; i++) {
-			if (this.isDarkPlayer) {
-				// y will decrease
-				if (Math.abs(path[i].y - path[i-1].y) == 2) {
-					// A piece has been captured
-					if (path[i].x < path[i-1].x) {
-						// On the left
-						this.state[path[i].y+1][path[i].x+1] = null
-						this.lightPlayer.pieces = this.lightPlayer.pieces.filter(
-							piece => !((piece.x == path[i].x+1) && (piece.y == path[i].y+1)) 
-						)
-					} else {
-						// On the right
-						this.state[path[i].y+1][path[i].x-1] = null
-						this.lightPlayer.pieces = this.lightPlayer.pieces.filter(
-							piece => !((piece.x == path[i].x-1) && (piece.y == path[i].y+1)) 
-						)
-					}
-				}
-			} else {
-				// y will increase
-				if (Math.abs(path[i].y - path[i-1].y) == 2) {
-					// A piece has been captured
-					if (path[i].x < path[i-1].x) {
-						// On the left
-						this.state[path[i].y-1][path[i].x+1] = null
-						this.darkPlayer.pieces = this.darkPlayer.pieces.filter(
-							piece => !((piece.x == path[i].x+1) && (piece.y == path[i].y-1)) 
-						)
-					} else {
-						// On the right
-						this.state[path[i].y-1][path[i].x-1] = null
-						this.darkPlayer.pieces = this.darkPlayer.pieces.filter(
-							piece => !((piece.x == path[i].x-1) && (piece.y == path[i].y-1)) 
-						)
-					}
-				}
-			}
+	// Check if the current player has made a move
+	if (clickedState !== null){
+		if (clickedState.piece.findMove(clickedState.piece.moves, i-1, j-1, path)) {
+			
+			console.log(path)
+			// This means a move has been found and that
+			// the current player has made a move
+			console.log("Current player has made a move")
+
+			this.removeCapturedPieces(path)
+
+			//Actually make the move
+			this.movePiece(i-1, j-1)
 		}
-		this.isDarkPlayer = !this.isDarkPlayer
 	}
 
 	// Update the current clicked position
@@ -198,238 +152,68 @@ Board.prototype.handleMouseClick = function () {
 	}
 
 	// Start building a tree of with the current move as the root
-	this.moves = new Move(this.clickedX, this.clickedY)
-	this.computePossibleMoves(this.clickedX, this.clickedY, this.moves)
-	console.log(this.moves)
+	this.possibleMoves = this.state[this.clickedY][this.clickedX].piece.computePossibleMoves(this.state)
+
+	console.log("Moves from piece", this.state[this.clickedY][this.clickedX].piece.moves)
 }
 
-// Find move and build path to the move
-Board.prototype.findMove = function (root, x, y, path) {
-	if (root == null) {
-		return false
-	}
-	path.push(new Move(root.x, root.y))
-
-	// Process the node
-	if (root.x == x && root.y == y) {
-		return true
-	}
-
-	// Check the left subtree
-	let foundLeft = this.findMove(root.leftChild, x, y, path)
-	// Check the right subtree
-	let foundRight = this.findMove(root.rightChild, x, y, path)
-
-	if (foundLeft || foundRight) {
-		return true
-	}
-
-	path.pop()
-	return false
-}
-
-
-Board.prototype.computePossibleMoves = function (x, y, moves) {
-	if (this.state[y][x].sym === "d") {
-		if (y-1 >= 0) {
-			// Left moves
-			if (x-1 >= 0) {
-				if (this.state[y-1][x-1] == null) {
-					this.possibleMoves.push({x: x-1, y: y-1})
-					moves.leftChild = new Move(x-1, y-1)
-				} else {
-					this.computePossibleCaptures(x, y, moves)
-				}
-			}
-			// Rght moves
-			if (x+1 < 8) {
-				if (this.state[y-1][x+1] == null) {
-					this.possibleMoves.push({x: x+1, y: y-1})
-					moves.rightChild = new Move(x+1, y-1)
-				} else {
-					this.computePossibleCaptures(x, y, moves)
-				}
-			}
-		}
-	} else if (this.state[y][x].sym === "l") {
-		if (y+1 < 8) {
-			// Left moves
-			if (x-1 >= 0 && this.state[y+1][x-1] == null) {
-				this.possibleMoves.push({x: x-1, y: y+1})
-				moves.leftChild = new Move(x-1, y+1)
-			} else {
-				this.computePossibleCaptures(x, y, moves)
-			}
-
-			// Right
-			if (x+1 < 8 && this.state[y+1][x+1] == null) {
-				this.possibleMoves.push({x: x+1, y: y+1})
-				moves.rightChild = new Move(x+1, y+1)
-			} else {
-				this.computePossibleCaptures(x, y, moves)
-			}
-		}
-	}	
-}
-
-Board.prototype.computePossibleCaptures = function (x, y, moves) {
-	// Compute left captures recursively
-	this.computeLeftCaptures(x, y, moves)
-
-	// Compute right captures recursively
-	this.computeRightCaptures(x, y, moves)
-}
-
-Board.prototype.computeLeftCaptures = function (x, y, moves) {
-	
-	// If the player can move forward
-	// if this.state.piece.canMoveForwardBy(1)
-	if (this.state[y][x].sym == "d") {
-		if (x < 0 || y < 0) {
-			return
-		}
-		if (y-1 >= 0) {
-			if (x-1 >= 0) {
-				if (this.state[y-1][x-1] != null && this.state[y-1][x-1].sym != "d") {
-					if (y-2 >= 0) {
-						if (x-2 >= 0) {
-							if (this.state[y-2][x-2] == null) {
-								//This is a possible move
-								this.possibleMoves.push({x: x-2, y: y-2})
-
-								// Grow the left subtree
-								let newMove = new Move(x-2, y-2)
-								moves.leftChild = newMove
-
-								// Simulate move
-								this.state[y-2][x-2] = {sym: "d", piece: new Piece("dark", x-2, y-2)}
-
-								this.computePossibleCaptures(x-2, y-2, newMove)
-
-								this.state[y-2][x-2] = null
-							} else {
-								return
-							}
-						}
-					}
-				} else {
-					// There is no capture on the left
-					return
-				}
-			}
-		}
+Board.prototype.movePiece = function (x, y) {
+	if (this.state[this.clickedY][this.clickedX].sym == "d" && this.isDarkPlayer) {
+		this.state[y][x] = this.state[this.clickedY][this.clickedX]
+		this.state[this.clickedY][this.clickedX] = null
+		this.state[y][x].piece.movePiece(x, y)
+		this.isDarkPlayer = !this.isDarkPlayer
+	} else if (this.state[this.clickedY][this.clickedX].sym == "l" && !this.isDarkPlayer) {
+		this.state[y][x] = this.state[this.clickedY][this.clickedX]
+		this.state[this.clickedY][this.clickedX] = null
+		this.state[y][x].piece.movePiece(x, y)
+		this.isDarkPlayer = !this.isDarkPlayer
 	} else {
-		if (x < 0 || y > 7) {
-			return
-		}
-		if (y+1 < 8) {
-			if (x-1 >= 0) {
-				if (this.state[y+1][x-1] != null && this.state[y+1][x-1].sym != "l") {
-					if (y+2 < 8) {
-						if (x-2 >= 0) {
-							if (this.state[y+2][x-2] == null) {
-								//This is a possible move
-								this.possibleMoves.push({x: x-2, y: y+2})
-
-								// Grow the left subtree
-								let newMove = new Move(x-2, y+2)
-								moves.leftChild = newMove
-
-								// Simulate move
-								this.state[y+2][x-2] = {sym: "l", piece: new Piece("light", x-2, y+2)}
-
-								this.computePossibleCaptures(x-2, y+2, newMove)
-
-								this.state[y+2][x-2] = null
-							} else {
-								return
-							}
-						}
-					}
-				} else {
-					// There is no capture on the left
-					return
-				}
-			}
-		}
+		return
 	}
-	
 }
 
-Board.prototype.computeRightCaptures = function (x, y, moves) {
-	
-	if (this.state[y][x].sym == "d") {
-		if (x > 7 || y < 0) {
-			return
-		}
-		if (y-1 >= 0) {
-			if (x+1 < 8) {
-				if (this.state[y-1][x+1] != null && this.state[y-1][x+1].sym != "d") {
-					if (y-2 >= 0) {
-						if (x+2 < 8) {
-							if (this.state[y-2][x+2] == null) {
-								//This is a possible move
-								this.possibleMoves.push({x: x+2, y: y-2})
-
-								// Grow the right subtree
-								let newMove = new Move(x+2, y-2)
-								moves.rightChild = newMove
-
-								// Simulate move
-								this.state[y-2][x+2] = {sym: "d", piece: new Piece("dark", x+2, y-2)}
-
-								this.computePossibleCaptures(x+2, y-2, newMove)
-
-								this.state[y-2][x+2] = null
-							} else {
-								return
-							}
-						}
-					}
+Board.prototype.removeCapturedPieces = function (path) {
+	for (let p = 1; p < path.length; p++) {
+		if (this.isDarkPlayer) {
+			// y will decrease
+			if (Math.abs(path[p].y - path[p-1].y) == 2) {
+				// A piece has been captured
+				if (path[p].x < path[p-1].x) {
+					// On the left
+					this.state[path[p].y+1][path[p].x+1] = null
+					this.lightPlayer.pieces = this.lightPlayer.pieces.filter(
+						piece => !((piece.x == path[p].x+1) && (piece.y == path[p].y+1)) 
+					)
 				} else {
-					// There is no capture on the left
-					return
+					// On the right
+					this.state[path[p].y+1][path[p].x-1] = null
+					this.lightPlayer.pieces = this.lightPlayer.pieces.filter(
+						piece => !((piece.x == path[p].x-1) && (piece.y == path[p].y+1)) 
+					)
 				}
 			}
-		}
-	} else {
-		if (x > 7 || y > 7) {
-			return
-		}
-		if (y+1 < 8) {
-			if (x+1 < 8) {
-				if (this.state[y+1][x+1] != null && this.state[y+1][x+1].sym != "l") {
-					if (y+2 < 8) {
-						if (x+2 < 8) {
-							if (this.state[y+2][x+2] == null) {
-								//This is a possible move
-								this.possibleMoves.push({x: x+2, y: y+2})
-
-								// Grow the right subtree
-								let newMove = new Move(x+2, y+2)
-								moves.rightChild = newMove
-
-								// Simulate move
-								this.state[y+2][x+2] = {sym: "l", piece: new Piece("light", x+2, y+2)}
-
-								this.computePossibleCaptures(x+2, y+2, newMove)
-
-								this.state[y+2][x+2] = null
-							} else {
-								return
-							}
-						}
-					}
+		} else {
+			// y will increase
+			if (Math.abs(path[p].y - path[p-1].y) == 2) {
+				// A piece has been captured
+				if (path[p].x < path[p-1].x) {
+					// On the left
+					this.state[path[p].y-1][path[p].x+1] = null
+					this.darkPlayer.pieces = this.darkPlayer.pieces.filter(
+						piece => !((piece.x == path[p].x+1) && (piece.y == path[p].y-1)) 
+					)
 				} else {
-					// There is no capture on the left
-					return
+					// On the right
+					this.state[path[p].y-1][path[p].x-1] = null
+					this.darkPlayer.pieces = this.darkPlayer.pieces.filter(
+						piece => !((piece.x == path[p].x-1) && (piece.y == path[p].y-1)) 
+					)
 				}
 			}
 		}
 	}
 }
-
-
 
 function Move(x, y) {
 	this.leftChild = null
