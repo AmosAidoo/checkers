@@ -1,9 +1,9 @@
-function Player(type) {
+function Player(type, boardSize) {
 	this.pieces = []
 	this.initialPositions = []
 
-	let xDiv = Math.floor(width/8)
-	let yDiv = Math.floor(height/8)
+	let xDiv = Math.floor(width/boardSize)
+	let yDiv = Math.floor(height/boardSize)
 
 	if (type === "dark") {
 		let startX = 0
