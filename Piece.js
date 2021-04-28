@@ -9,7 +9,6 @@ function Piece(type, x, y) {
 	this.y = y
 	this.isKing = false
 	this.moves = null
-	this.possibleMoves = []
 	
 	if (this.type === "dark") {
 		this.color = "#ff0000"
@@ -30,27 +29,60 @@ Piece.prototype.movePiece = function (x, y) {
 	this.y = y
 }
 
+Piece.prototype.promoteToKing = function () {
+	if (this.type == "dark" && this.y == 0 && !this.isKing) {
+		this.isKing = true
+	} else if (this.type == "dark" && this.y == 7 && !this.isKing) {
+		this.isKing = true
+	}
+}
+
+// Find move x,y in the path
+Piece.prototype.findMove = function (root, x, y, path) {
+	if (root == null) {
+		return false
+	}
+	path.push(new Move(root.x, root.y))
+
+	// Process the node
+	if (root.x == x && root.y == y) {
+		return true
+	}
+
+	// Check the left subtree
+	let foundLeft = this.findMove(root.leftChild, x, y, path)
+	// Check the right subtree
+	let foundRight = this.findMove(root.rightChild, x, y, path)
+
+	if (foundLeft || foundRight) {
+		return true
+	}
+
+	path.pop()
+	return false
+}
+
 Piece.prototype.computePossibleMoves = function (state) {
-	this.possibleMoves = []
+	possibleMoves = []
 	this.moves = new Move(this.x, this.y)
 	if (this.type === "dark") {
 		if (this.y-1 >= 0) {
 			// Left moves
 			if (this.x-1 >= 0) {
 				if (state[this.y-1][this.x-1] == null) {
-					this.possibleMoves.push({x: this.x-1, y: this.y-1})
+					possibleMoves.push({x: this.x-1, y: this.y-1})
 					this.moves.leftChild = new Move(this.x-1, this.y-1)
 				} else {
-					this.computePossibleCaptures(this.x, this.y, this.moves, state)
+					this.computePossibleCaptures(this.x, this.y, this.moves, state, possibleMoves)
 				}
 			}
 			// Rght moves
 			if (this.x+1 < 8) {
 				if (state[this.y-1][this.x+1] == null) {
-					this.possibleMoves.push({x: this.x+1, y: this.y-1})
+					possibleMoves.push({x: this.x+1, y: this.y-1})
 					this.moves.rightChild = new Move(this.x+1, this.y-1)
 				} else {
-					this.computePossibleCaptures(this.x, this.y, this.moves, state)
+					this.computePossibleCaptures(this.x, this.y, this.moves, state, possibleMoves)
 				}
 			}
 		}
@@ -58,32 +90,33 @@ Piece.prototype.computePossibleMoves = function (state) {
 		if (this.y+1 < 8) {
 			// Left moves
 			if (this.x-1 >= 0 && state[this.y+1][this.x-1] == null) {
-				this.possibleMoves.push({x: this.x-1, y: this.y+1})
+				possibleMoves.push({x: this.x-1, y: this.y+1})
 				this.moves.leftChild = new Move(this.x-1, this.y+1)
 			} else {
-				this.computePossibleCaptures(this.x, this.y, this.moves, state)
+				this.computePossibleCaptures(this.x, this.y, this.moves, state, possibleMoves)
 			}
 
 			// Right
 			if (this.x+1 < 8 && state[this.y+1][this.x+1] == null) {
-				this.possibleMoves.push({x: this.x+1, y: this.y+1})
+				possibleMoves.push({x: this.x+1, y: this.y+1})
 				this.moves.rightChild = new Move(this.x+1, this.y+1)
 			} else {
-				this.computePossibleCaptures(this.x, this.y, this.moves, state)
+				this.computePossibleCaptures(this.x, this.y, this.moves, state, possibleMoves)
 			}
 		}
-	}	
+	}
+	return possibleMoves	
 }
 
-Piece.prototype.computePossibleCaptures = function (x, y, moves, state) {
+Piece.prototype.computePossibleCaptures = function (x, y, moves, state, possibleMoves) {
 	// Compute left captures recursively
-	this.computeLeftCaptures(x, y, moves, state)
+	this.computeLeftCaptures(x, y, moves, state, possibleMoves)
 
 	// Compute right captures recursively
-	this.computeRightCaptures(x, y, moves, state)
+	this.computeRightCaptures(x, y, moves, state, possibleMoves)
 }
 
-Piece.prototype.computeLeftCaptures = function (x, y, moves, state) {
+Piece.prototype.computeLeftCaptures = function (x, y, moves, state, possibleMoves) {
 	
 	// If the player can move forward
 	// if state.piece.canMoveForwardBy(1)
@@ -98,7 +131,7 @@ Piece.prototype.computeLeftCaptures = function (x, y, moves, state) {
 						if (x-2 >= 0) {
 							if (state[y-2][x-2] == null) {
 								//This is a possible move
-								this.possibleMoves.push({x: x-2, y: y-2})
+								possibleMoves.push({x: x-2, y: y-2})
 
 								// Grow the left subtree
 								let newMove = new Move(x-2, y-2)
@@ -107,7 +140,7 @@ Piece.prototype.computeLeftCaptures = function (x, y, moves, state) {
 								// Simulate move
 								state[y-2][x-2] = {sym: "d", piece: new Piece("dark", x-2, y-2)}
 
-								this.computePossibleCaptures(x-2, y-2, newMove, state)
+								this.computePossibleCaptures(x-2, y-2, newMove, state, possibleMoves)
 
 								state[y-2][x-2] = null
 							} else {
@@ -132,7 +165,7 @@ Piece.prototype.computeLeftCaptures = function (x, y, moves, state) {
 						if (x-2 >= 0) {
 							if (state[y+2][x-2] == null) {
 								//This is a possible move
-								this.possibleMoves.push({x: x-2, y: y+2})
+								possibleMoves.push({x: x-2, y: y+2})
 
 								// Grow the left subtree
 								let newMove = new Move(x-2, y+2)
@@ -141,7 +174,7 @@ Piece.prototype.computeLeftCaptures = function (x, y, moves, state) {
 								// Simulate move
 								state[y+2][x-2] = {sym: "l", piece: new Piece("light", x-2, y+2)}
 
-								this.computePossibleCaptures(x-2, y+2, newMove, state)
+								this.computePossibleCaptures(x-2, y+2, newMove, state, possibleMoves)
 
 								state[y+2][x-2] = null
 							} else {
@@ -159,7 +192,7 @@ Piece.prototype.computeLeftCaptures = function (x, y, moves, state) {
 	
 }
 
-Piece.prototype.computeRightCaptures = function (x, y, moves, state) {
+Piece.prototype.computeRightCaptures = function (x, y, moves, state, possibleMoves) {
 	
 	if (state[y][x].sym == "d") {
 		if (x > 7 || y < 0) {
@@ -172,7 +205,7 @@ Piece.prototype.computeRightCaptures = function (x, y, moves, state) {
 						if (x+2 < 8) {
 							if (state[y-2][x+2] == null) {
 								//This is a possible move
-								this.possibleMoves.push({x: x+2, y: y-2})
+								possibleMoves.push({x: x+2, y: y-2})
 
 								// Grow the right subtree
 								let newMove = new Move(x+2, y-2)
@@ -181,7 +214,7 @@ Piece.prototype.computeRightCaptures = function (x, y, moves, state) {
 								// Simulate move
 								state[y-2][x+2] = {sym: "d", piece: new Piece("dark", x+2, y-2)}
 
-								this.computePossibleCaptures(x+2, y-2, newMove, state)
+								this.computePossibleCaptures(x+2, y-2, newMove, state, possibleMoves)
 
 								state[y-2][x+2] = null
 							} else {
@@ -206,7 +239,7 @@ Piece.prototype.computeRightCaptures = function (x, y, moves, state) {
 						if (x+2 < 8) {
 							if (state[y+2][x+2] == null) {
 								//This is a possible move
-								this.possibleMoves.push({x: x+2, y: y+2})
+								possibleMoves.push({x: x+2, y: y+2})
 
 								// Grow the right subtree
 								let newMove = new Move(x+2, y+2)
@@ -215,7 +248,7 @@ Piece.prototype.computeRightCaptures = function (x, y, moves, state) {
 								// Simulate move
 								state[y+2][x+2] = {sym: "l", piece: new Piece("light", x+2, y+2)}
 
-								this.computePossibleCaptures(x+2, y+2, newMove, state)
+								this.computePossibleCaptures(x+2, y+2, newMove, state, possibleMoves)
 
 								state[y+2][x+2] = null
 							} else {
