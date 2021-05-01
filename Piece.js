@@ -119,11 +119,10 @@ Piece.prototype.computePossibleCaptures = function (x, y, moves, state, possible
 Piece.prototype.computeLeftCaptures = function (x, y, moves, state, possibleMoves) {
 	
 	// If the player can move forward
-	// if state.piece.canMoveForwardBy(1)
 	if (state[y][x].sym == "d") {
-		if (x < 0 || y < 0) {
-			return
-		}
+		// if (x < 0 || y < 0) {
+		// 	return
+		// }
 		if (y-1 >= 0) {
 			if (x-1 >= 0) {
 				if (state[y-1][x-1] != null && state[y-1][x-1].sym != "d") {
@@ -155,9 +154,9 @@ Piece.prototype.computeLeftCaptures = function (x, y, moves, state, possibleMove
 			}
 		}
 	} else {
-		if (x < 0 || y > 7) {
-			return
-		}
+		// if (x < 0 || y > 7) {
+		// 	return
+		// }
 		if (y+1 < 8) {
 			if (x-1 >= 0) {
 				if (state[y+1][x-1] != null && state[y+1][x-1].sym != "l") {
@@ -195,9 +194,9 @@ Piece.prototype.computeLeftCaptures = function (x, y, moves, state, possibleMove
 Piece.prototype.computeRightCaptures = function (x, y, moves, state, possibleMoves) {
 	
 	if (state[y][x].sym == "d") {
-		if (x > 7 || y < 0) {
-			return
-		}
+		// if (x > 7 || y < 0) {
+		// 	return
+		// }
 		if (y-1 >= 0) {
 			if (x+1 < 8) {
 				if (state[y-1][x+1] != null && state[y-1][x+1].sym != "d") {
@@ -229,9 +228,9 @@ Piece.prototype.computeRightCaptures = function (x, y, moves, state, possibleMov
 			}
 		}
 	} else {
-		if (x > 7 || y > 7) {
-			return
-		}
+		// if (x > 7 || y > 7) {
+		// 	return
+		// }
 		if (y+1 < 8) {
 			if (x+1 < 8) {
 				if (state[y+1][x+1] != null && state[y+1][x+1].sym != "l") {
