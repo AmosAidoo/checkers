@@ -30,6 +30,7 @@ Piece.prototype.display = function () {
 	
 	fill(this.color)
 	ellipse(this.x * this.size + this.size/2, this.y * this.size + this.size/2, this.size-10, this.size-10)
+	strokeWeight(2)
 }
 
 Piece.prototype.movePiece = function (x, y) {
@@ -273,12 +274,15 @@ Piece.prototype.computeKingMoves = function(state, possibleMoves) {
 		switch(i) {
 			case 0:
 				// Top left
+				console.log("Checking the top left")
 				if (isValidMove(this.x-1, this.y-1)) {
 					if (state[this.y-1][this.x-1] === null) {
+						console.log("There is space at the top left")
 						this.kingMoves.topLeft = new KingMove(this.x-1, this.y-1)
 						possibleMoves.push({x: this.x-1, y: this.y-1})
 					} else {
-						if (state[this.y-1][this.x-1].type !== this.type.charAt(0)) {
+						console.log("There is a capture")
+						if (state[this.y-1][this.x-1].sym !== this.type.charAt(0)) {
 							if (isValidMove(this.x-2, this.y-2)) {
 								this.computeKingCaptures(this.x, this.y, this.kingMoves, state, possibleMoves, visited)
 							}
@@ -288,13 +292,17 @@ Piece.prototype.computeKingMoves = function(state, possibleMoves) {
 				break
 			case 1:
 				// Top right
+				console.log("Checking the top right")
 				if (isValidMove(this.x+1, this.y-1)) {
 					if (state[this.y-1][this.x+1] === null) {
+						console.log("There is space at the top right")
 						this.kingMoves.topRight = new KingMove(this.x+1, this.y-1)
 						possibleMoves.push({x: this.x+1, y: this.y-1})
 					} else {
-						if (state[this.y-1][this.x+1].type !== this.type.charAt(0)) {
+						
+						if (state[this.y-1][this.x+1].sym !== this.type.charAt(0)) {
 							if (isValidMove(this.x+2, this.y-2)) {
+								console.log("There is a capture at the top right")
 								this.computeKingCaptures(this.x, this.y, this.kingMoves, state, possibleMoves, visited)
 							}
 						}
@@ -303,13 +311,16 @@ Piece.prototype.computeKingMoves = function(state, possibleMoves) {
 				break
 			case 2:
 				// Bottom left
+				console.log("Checking the bottom left")
 				if (isValidMove(this.x-1, this.y+1)) {
 					if (state[this.y+1][this.x-1] === null) {
+						console.log("There is space at the bottom left")
 						this.kingMoves.bottomLeft = new KingMove(this.x-1, this.y+1)
-						possibleMoves.push({x: this.x+1, y: this.y-1})
+						possibleMoves.push({x: this.x-1, y: this.y+1})
 					} else {
-						if (state[this.y+1][this.x-1].type !== this.type.charAt(0)) {
+						if (state[this.y+1][this.x-1].sym !== this.type.charAt(0)) {
 							if (isValidMove(this.x-2, this.y+2)) {
+								console.log("There is a capture at the bottom left")
 								this.computeKingCaptures(this.x, this.y, this.kingMoves, state, possibleMoves, visited)
 							}
 						}
@@ -318,13 +329,16 @@ Piece.prototype.computeKingMoves = function(state, possibleMoves) {
 				break
 			case 3:
 				// Bottom right
+				console.log("Checking the bottom right")
 				if (isValidMove(this.x+1, this.y+1)) {
 					if (state[this.y+1][this.x+1] === null) {
+						console.log("There is space at the bottom right")
 						this.kingMoves.bottomRight = new KingMove(this.x+1, this.y+1)
 						possibleMoves.push({x: this.x+1, y: this.y+1})
 					} else {
-						if (state[this.y+1][this.x+1].type !== this.type.charAt(0)) {
+						if (state[this.y+1][this.x+1].sym !== this.type.charAt(0)) {
 							if (isValidMove(this.x+2, this.y+2)) {
+								console.log("There is a capture at the bottom right")
 								this.computeKingCaptures(this.x, this.y, this.kingMoves, state, possibleMoves, visited)
 							}
 						}
@@ -336,25 +350,27 @@ Piece.prototype.computeKingMoves = function(state, possibleMoves) {
 }
 
 function isValidMove(x, y) {
-	return (x >= 0 || x < 8) && (y >= 0 && y < 8)
+	return (x >= 0 && x < 8) && (y >= 0 && y < 8)
 }
 
 Piece.prototype.findKingCapture = function(x, y, stepX, stepY, moves, state, possibleMoves, visited) {
 	if (isValidMove(x+stepX, y+stepY)) {
 		if (state[y+stepY][x+stepX] !== null) {
-			if (isValidMove(x+(stepX*2), y+(stepY*2))) {
-				if (state[y+(stepY*2)][x+(stepX*2)] === null) {
-					let newMove = new KingMove(x+(stepX*2), y+(stepY*2))
-					moves.topLeft = newMove
-					possibleMoves.push({x: x+(stepX*2), y: y+(stepY*2)})
+			if (state[y+stepY][x+stepX].sym !== this.type.charAt(0)) {
+				if (isValidMove(x+(stepX*2), y+(stepY*2))) {
+					if (state[y+(stepY*2)][x+(stepX*2)] === null) {
+						let newMove = new KingMove(x+(stepX*2), y+(stepY*2))
+						moves.topLeft = newMove
+						possibleMoves.push({x: x+(stepX*2), y: y+(stepY*2)})
 
-					// Simulate the move
-					state[y+(stepY*2)][x+(stepX*2)] = {
-						sym: this.type.charAt(0), 
-						piece: new Piece(this.type, x+(stepX*2), y+(stepY*2))
+						// Simulate the move
+						state[y+(stepY*2)][x+(stepX*2)] = {
+							sym: this.type.charAt(0), 
+							piece: new Piece(this.type, x+(stepX*2), y+(stepY*2))
+						}
+						this.computeKingCaptures(x+(stepX*2), y+(stepY*2), moves, state, possibleMoves, visited)
+						state[y+(stepY*2)][x+(stepX*2)] = null
 					}
-					this.computeKingCaptures(x+(stepX*2), y+(stepY*2), moves, state, possibleMoves, visited)
-					state[y+(stepY*2)][x+(stepX*2)] = null
 				}
 			}
 		}
