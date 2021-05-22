@@ -10,10 +10,6 @@ let board
 function setup() {
 	createCanvas(500, 500)
 	board = new Board(true)
-	xDiv = width/board.SIZE
-	yDiv = height/board.SIZE
-	moveToggle = false
-	possibleMoves = []
 	console.log(board.state)
 }
 
