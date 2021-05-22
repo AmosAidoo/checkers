@@ -9,7 +9,6 @@ So far I have been able to implemented a basic checkers engine. Red plays first.
 
 ### TODO
 - Forced Captures
-- Promotion of man to king
 - Start building the AI
 - Clean up the code
 - Show feedback to enhance user experience
