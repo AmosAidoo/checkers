@@ -51,7 +51,7 @@ Piece.prototype.findMove = function (root, x, y, path) {
 	if (root == null) {
 		return false
 	}
-	path.push(new Move(root.x, root.y))
+	path.push(root)
 
 	// Process the node
 	if (root.x == x && root.y == y) {
@@ -64,6 +64,43 @@ Piece.prototype.findMove = function (root, x, y, path) {
 	let foundRight = this.findMove(root.rightChild, x, y, path)
 
 	if (foundLeft || foundRight) {
+		return true
+	}
+
+	path.pop()
+	return false
+}
+
+// Find move x,y in the path
+Piece.prototype.findKingMove = function (root, x, y, path) {
+	if (root == null) {
+		return false
+	}
+	path.push(root)
+
+	// Process the node
+	if (root.x == x && root.y == y) {
+		return true
+	}
+
+	let flag = [false, false, false, false]
+	for (let i = 0; i < 4; i++) {
+		switch (i) {
+			case 0:
+				flag[i] = this.findKingMove(root.topLeft, x, y, path)
+				break
+			case 1:
+				flag[i] = this.findKingMove(root.topRight, x, y, path)
+				break
+			case 2:
+				flag[i] = this.findKingMove(root.bottomLeft, x, y, path)
+				break
+			case 3:
+				flag[i] = this.findKingMove(root.bottomRight, x, y, path)
+				break
+		}
+	}
+	if (flag[0] || flag[1] || flag[2] || flag[3]) {
 		return true
 	}
 
@@ -148,7 +185,7 @@ Piece.prototype.computeLeftCaptures = function (x, y, moves, state, possibleMove
 								// Grow the left subtree
 								let newMove = new Move(x-2, y-2)
 								moves.leftChild = newMove
-								moves.capturedPiece = {x: x-1, y: y-1}
+								newMove.capturedPiece = {x: x-1, y: y-1}
 
 								// Simulate move
 								state[y-2][x-2] = {sym: "d", piece: new Piece("dark", x-2, y-2)}
@@ -175,7 +212,7 @@ Piece.prototype.computeLeftCaptures = function (x, y, moves, state, possibleMove
 								// Grow the left subtree
 								let newMove = new Move(x-2, y+2)
 								moves.leftChild = newMove
-								moves.capturedPiece = {x: x-1, y: y+1}
+								newMove.capturedPiece = {x: x-1, y: y+1}
 
 								// Simulate move
 								state[y+2][x-2] = {sym: "l", piece: new Piece("light", x-2, y+2)}
@@ -208,7 +245,7 @@ Piece.prototype.computeRightCaptures = function (x, y, moves, state, possibleMov
 								// Grow the right subtree
 								let newMove = new Move(x+2, y-2)
 								moves.rightChild = newMove
-								moves.capturedPiece = {x: x+1, y: y+1}
+								newMove.capturedPiece = {x: x+1, y: y-1}
 
 								// Simulate move
 								state[y-2][x+2] = {sym: "d", piece: new Piece("dark", x+2, y-2)}
@@ -235,7 +272,7 @@ Piece.prototype.computeRightCaptures = function (x, y, moves, state, possibleMov
 								// Grow the right subtree
 								let newMove = new Move(x+2, y+2)
 								moves.rightChild = newMove
-								moves.capturedPiece = {x: x+1, y: y+1}
+								newMove.capturedPiece = {x: x+1, y: y+1}
 
 								// Simulate move
 								state[y+2][x+2] = {sym: "l", piece: new Piece("light", x+2, y+2)}
@@ -353,22 +390,26 @@ function isValidMove(x, y) {
 	return (x >= 0 && x < 8) && (y >= 0 && y < 8)
 }
 
-Piece.prototype.findKingCapture = function(x, y, stepX, stepY, moves, state, possibleMoves, visited) {
+Piece.prototype.findKingCapture = function(x, y, stepX, stepY, moves, child, state, possibleMoves, visited) {
 	if (isValidMove(x+stepX, y+stepY)) {
 		if (state[y+stepY][x+stepX] !== null) {
 			if (state[y+stepY][x+stepX].sym !== this.type.charAt(0)) {
 				if (isValidMove(x+(stepX*2), y+(stepY*2))) {
 					if (state[y+(stepY*2)][x+(stepX*2)] === null) {
 						let newMove = new KingMove(x+(stepX*2), y+(stepY*2))
-						moves.topLeft = newMove
+						moves[child] = newMove
+						newMove.capturedPiece = {x:x+stepX, y:y+stepY}
+						console.log("The child is ", moves[child])
 						possibleMoves.push({x: x+(stepX*2), y: y+(stepY*2)})
 
 						// Simulate the move
+						let tmpPiece = new Piece(this.type, x+(stepX*2), y+(stepY*2))
+						tmpPiece.isKing = true
 						state[y+(stepY*2)][x+(stepX*2)] = {
 							sym: this.type.charAt(0), 
-							piece: new Piece(this.type, x+(stepX*2), y+(stepY*2))
+							piece: tmpPiece
 						}
-						this.computeKingCaptures(x+(stepX*2), y+(stepY*2), moves, state, possibleMoves, visited)
+						this.computeKingCaptures(x+(stepX*2), y+(stepY*2), moves[child], state, possibleMoves, visited)
 						state[y+(stepY*2)][x+(stepX*2)] = null
 					}
 				}
@@ -388,16 +429,20 @@ Piece.prototype.computeKingCaptures = function(x, y, moves, state, possibleMoves
 		switch(i) {
 			case 0:
 				// Top left
-				this.findKingCapture(x,y,-1,+1,moves,state,possibleMoves, visited)
+				this.findKingCapture(x,y,-1,-1,moves,"topLeft",state,possibleMoves, visited)
+				break
 			case 1:
 				// Top right
-				this.findKingCapture(x,y,+1,+1,moves,state,possibleMoves, visited)
+				this.findKingCapture(x,y,+1,-1,moves,"topRight",state,possibleMoves, visited)
+				break
 			case 2:
 				// Bottom left
-				this.findKingCapture(x,y,-1,-1,moves,state,possibleMoves, visited)
+				this.findKingCapture(x,y,-1,+1,moves,"bottomLeft",state,possibleMoves, visited)
+				break
 			case 3:
 				// Bottom right
-				this.findKingCapture(x,y,+1,-1,moves,state,possibleMoves, visited)
+				this.findKingCapture(x,y,+1,+1,moves,"bottomRight",state,possibleMoves, visited)
+				break
 		}
 	}
 }
@@ -409,4 +454,5 @@ function KingMove(x, y) {
 	this.topRight = null
 	this.bottomLeft = null
 	this.bottomRight = null
+	this.capturedPiece = null
 }
