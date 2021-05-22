@@ -3,4 +3,5 @@ function Move(x, y) {
 	this.rightChild = null
 	this.x = x
 	this.y = y
+	this.capturedPiece = null
 }
