@@ -10,11 +10,11 @@
  */
 function Board(darkPlayer) {
 	this.SIZE = 8
-	this.darkPlayer = new Player("dark", this.SIZE = 8)
-	this.lightPlayer = new Player("light", this.SIZE = 8)
+	this.darkPlayer = new Player("dark", this.SIZE)
+	this.lightPlayer = new Player("light", this.SIZE)
 	this.state = [[], [], [], [], [], [], [], []]
-	this.clickedX = 0
-	this.clickedY = 0
+	this.clickedX = null
+	this.clickedY = null
 	this.possibleMoves = []
 	this.moveToggle = false
 	this.isDarkPlayer = darkPlayer
@@ -51,13 +51,8 @@ Board.prototype.display = function () {
 
 	// The board is 8x8
 	for (let y = 0; y < this.SIZE; y++) {
-		if (y % 2 === 0) {
-			colorSwitch = 0
-		} else {
-			colorSwitch = 1
-		}
+		colorSwitch = y%2
 		for (let x = 0; x < this.SIZE; x++) {
-			// noStroke()
 			if (colorSwitch === 0) {
 				fill(white)
 				colorSwitch = 1
@@ -83,7 +78,11 @@ Board.prototype.showPossibleMoves = function () {
 	let xDiv = width/this.SIZE
 	let yDiv = height/this.SIZE
 	
-	rect(this.clickedX*Math.floor(xDiv), this.clickedY*Math.floor(yDiv), Math.floor(xDiv), Math.floor(yDiv))
+	if (this.clickedX !== null) {
+		rect(this.clickedX*Math.floor(xDiv), this.clickedY*Math.floor(yDiv), Math.floor(xDiv), Math.floor(yDiv))
+	}
+	
+	
 	for (let i = 0; i < this.possibleMoves.length; i++) {
 		rect(this.possibleMoves[i].x*Math.floor(xDiv), this.possibleMoves[i].y*Math.floor(yDiv), Math.floor(xDiv), Math.floor(yDiv))
 	}
@@ -108,34 +107,52 @@ Board.prototype.handleMouseClick = function () {
 		}
 	}
 
-	// Toggle move
-	// if (this.moveToggle) {
+	//Check to see whether I have reclicked an already clicked position
 	if (this.clickedX == i-1 && this.clickedY == j-1) {
-		// this.moveToggle = false
 		return
 	}
-	// } else {
-	// 	this.moveToggle = true
-	// }
+
 	console.log("State: ", this.state[j-1][i-1])
 
 	path = []
-
-	let clickedState = this.state[this.clickedY][this.clickedX]
-
+	
+	// This makes sure there is no box at position 0,0 when the game starts
+	if (this.clickedX === null) {
+		this.clickedX = this.clickedY = 0
+	}
+	
 	// Check if the current player has made a move
+	let clickedState = this.state[this.clickedY][this.clickedX]
 	if (clickedState !== null){
-		if (clickedState.piece.findMove(clickedState.piece.moves, i-1, j-1, path)) {
+
+		if (clickedState.piece.isKing) {
+			console.log("Finding move for the king")
+			console.log("The king move: ", clickedState.piece.kingMoves)
+			if (clickedState.piece.findKingMove(clickedState.piece.kingMoves, i-1, j-1, path)) {
+				
+				console.log(path)
+				// This means a move has been found and that
+				// the current player has made a move
+				console.log("Current player has made a move")
+	
+				this.removeCapturedPieces(path)
+	
+				//Actually make the move
+				this.movePiece(i-1, j-1)
+			}
+		} else {
+			if (clickedState.piece.findMove(clickedState.piece.moves, i-1, j-1, path)) {
 			
-			console.log(path)
-			// This means a move has been found and that
-			// the current player has made a move
-			console.log("Current player has made a move")
-
-			this.removeCapturedPieces(path)
-
-			//Actually make the move
-			this.movePiece(i-1, j-1)
+				console.log(path)
+				// This means a move has been found and that
+				// the current player has made a move
+				console.log("Current player has made a move")
+	
+				this.removeCapturedPieces(path)
+	
+				//Actually make the move
+				this.movePiece(i-1, j-1)
+			}
 		}
 	}
 
@@ -153,8 +170,8 @@ Board.prototype.handleMouseClick = function () {
 
 	// Start building a tree of with the current move as the root
 	this.possibleMoves = this.state[this.clickedY][this.clickedX].piece.computePossibleMoves(this.state)
-
-	console.log("Moves from piece", this.state[this.clickedY][this.clickedX].piece.moves)
+	console.log("Moves: ", this.state[this.clickedY][this.clickedX].piece.moves)
+	console.log("King Moves: ", this.state[this.clickedY][this.clickedX].piece.kingMoves)
 }
 
 Board.prototype.movePiece = function (x, y) {
@@ -169,47 +186,26 @@ Board.prototype.movePiece = function (x, y) {
 		this.state[y][x].piece.movePiece(x, y)
 		this.isDarkPlayer = !this.isDarkPlayer
 	} else {
-		return
+		alert(this.isDarkPlayer ? "Sorry red's turn" : "Sorry white's turn")
 	}
 }
 
 Board.prototype.removeCapturedPieces = function (path) {
 	for (let p = 1; p < path.length; p++) {
+		console.log("A move on the path: ", path[p])
 		if (this.isDarkPlayer) {
-			// y will decrease
-			if (Math.abs(path[p].y - path[p-1].y) == 2) {
-				// A piece has been captured
-				if (path[p].x < path[p-1].x) {
-					// On the left
-					this.state[path[p].y+1][path[p].x+1] = null
-					this.lightPlayer.pieces = this.lightPlayer.pieces.filter(
-						piece => !((piece.x == path[p].x+1) && (piece.y == path[p].y+1)) 
-					)
-				} else {
-					// On the right
-					this.state[path[p].y+1][path[p].x-1] = null
-					this.lightPlayer.pieces = this.lightPlayer.pieces.filter(
-						piece => !((piece.x == path[p].x-1) && (piece.y == path[p].y+1)) 
-					)
-				}
+			if (path[p].capturedPiece !== null) {
+				this.state[path[p].capturedPiece.y][path[p].capturedPiece.x] = null
+				this.lightPlayer.pieces = this.lightPlayer.pieces.filter(
+					piece => !((piece.x == path[p].capturedPiece.x) && (piece.y == path[p].capturedPiece.y)) 
+				)
 			}
 		} else {
-			// y will increase
-			if (Math.abs(path[p].y - path[p-1].y) == 2) {
-				// A piece has been captured
-				if (path[p].x < path[p-1].x) {
-					// On the left
-					this.state[path[p].y-1][path[p].x+1] = null
-					this.darkPlayer.pieces = this.darkPlayer.pieces.filter(
-						piece => !((piece.x == path[p].x+1) && (piece.y == path[p].y-1)) 
-					)
-				} else {
-					// On the right
-					this.state[path[p].y-1][path[p].x-1] = null
-					this.darkPlayer.pieces = this.darkPlayer.pieces.filter(
-						piece => !((piece.x == path[p].x-1) && (piece.y == path[p].y-1)) 
-					)
-				}
+			if (path[p].capturedPiece !== null) {
+				this.state[path[p].capturedPiece.y][path[p].capturedPiece.x] = null
+				this.darkPlayer.pieces = this.darkPlayer.pieces.filter(
+					piece => !((piece.x == path[p].capturedPiece.x) && (piece.y == path[p].capturedPiece.y)) 
+				)
 			}
 		}
 	}
